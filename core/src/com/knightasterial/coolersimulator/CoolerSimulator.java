@@ -26,6 +26,7 @@ public class CoolerSimulator extends ApplicationAdapter {
 	double scaleRatio;
 	
 	Vector3 mousePos;				//position of the mouse
+	AirUnit currentAir;				//variable to hold current airUnit for drawing
 	
 	/**
 	 * Clockwise rotation:
@@ -42,6 +43,7 @@ public class CoolerSimulator extends ApplicationAdapter {
 	
 	ServerUnit[][] unitArray;
 	AirUnit[][] airArray;
+
 	
 	@Override
 	public void create () {
@@ -98,13 +100,41 @@ public class CoolerSimulator extends ApplicationAdapter {
 		camera.update();
 		
 		batch.setProjectionMatrix(camera.combined);
+		sRender.setProjectionMatrix(camera.combined);
 		
 		sRender.begin(ShapeType.Filled);
-		sRender.setColor(0, 255, 0, 1);
-		sRender.rect( 0, 0, (int) (64*scaleRatio), (int) (64*scaleRatio) );
+		
+		for (int verticalNum = 0; verticalNum < 8; verticalNum++){
+			for (int horizontalNum = 0; horizontalNum < 8; horizontalNum++){
+				if ( (airArray[verticalNum][horizontalNum] != null) ){
+					currentAir = airArray[verticalNum][horizontalNum];
+					sRender.setColor(currentAir.getRed(), currentAir.getGreen(), currentAir.getBlue(), currentAir.getAlpha());
+					sRender.rect((int) (horizontalNum*64*scaleRatio), (int) (verticalNum*64*scaleRatio), (int) (64*scaleRatio), (int) (64*scaleRatio));
+				}
+			}
+		}
+		
+		
+		
+		//sRender.setColor(0, 255, 0, 1);
+		//sRender.rect( 0, 0, (int) (64*scaleRatio), (int) (64*scaleRatio) );
 		sRender.end();
 		
 		batch.begin();
+		
+		//-------------------------------Draw Server Units-----------------------------
+		for (int verticalNum = 0; verticalNum < 8; verticalNum++){
+			for (int horizontalNum = 0; horizontalNum < 8; horizontalNum++){
+				if ( (unitArray[verticalNum][horizontalNum] != null) ){
+					batch.draw(unitArray[verticalNum][horizontalNum].getImage(),
+								(int) (horizontalNum*64*scaleRatio),
+								(int) (verticalNum*64*scaleRatio),
+								(int) (64*scaleRatio), 
+								(int) (64*scaleRatio)
+							  );
+				}
+			}
+		}
 		
 		//-------------------------------Draw Selector-----------------------------
 		if ( !(mousePos.x > (512*scaleRatio)) &&  !(mousePos.y > (512*scaleRatio))){			//draws selector if on the board
@@ -141,27 +171,17 @@ public class CoolerSimulator extends ApplicationAdapter {
 			
 		}else{}
 		
-		//-------------------------------Draw Server Units-----------------------------
-		for (int verticalNum = 0; verticalNum < 8; verticalNum++){
-			for (int horizontalNum = 0; horizontalNum < 8; horizontalNum++){
-				if ( (unitArray[verticalNum][horizontalNum] != null) ){
-					batch.draw(unitArray[verticalNum][horizontalNum].getImage(),
-								(int) (horizontalNum*64*scaleRatio),
-								(int) (verticalNum*64*scaleRatio),
-								(int) (64*scaleRatio), 
-								(int) (64*scaleRatio)
-							  );
-				}
-			}
-		}
-		
-		
 		batch.draw(gameBoard, 0, 0, boardDimension, boardDimension);
 		batch.end();
 		
+		
+		
+		
+		//-------------------------------Draws Selector Icon-----------------------------
 		mousePos.set(Gdx.input.getX(), Gdx.input.getY(), 0);		//finds mouse position for selector
 		camera.unproject(mousePos);
 
+		
 		if (Gdx.input.isKeyJustPressed(Input.Keys.E)){				//E rotates selector clockwise 1
 			selectorDirection = (selectorDirection +1)%4;				
 		} else if (Gdx.input.isKeyJustPressed(Input.Keys.Q)){
@@ -170,7 +190,40 @@ public class CoolerSimulator extends ApplicationAdapter {
 				selectorDirection += 4;
 			}
 		}
-
+		//-------------------------------Create Units After Click-----------------------------
+		if (Gdx.input.justTouched()){
+			mousePos.set(Gdx.input.getX(), Gdx.input.getY(), 0);		//finds mouse position
+			camera.unproject(mousePos);
+			
+			if (mousePos.x < 512*scaleRatio && mousePos.y < 512*scaleRatio){									//adds ServerUnit and deletes AirUnit
+				unitArray[(int)( mousePos.y / (int) (64*scaleRatio) )][(int)( mousePos.x / (int) (64*scaleRatio) )] = new ServerUnit(selectorDirection);
+				airArray[(int)( mousePos.y / (int) (64*scaleRatio) )][(int)( mousePos.x / (int) (64*scaleRatio) )] = null;
+			}
+		}
+		//-------------------------------Deletes Units After "ESCAPE-pressed"-----------------------------
+		if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)){
+			mousePos.set(Gdx.input.getX(), Gdx.input.getY(), 0);		//finds mouse position
+			camera.unproject(mousePos);
+			
+			if (mousePos.x < 512*scaleRatio && mousePos.y < 512*scaleRatio){									//deletes ServerUnit and creates AirUnit
+				unitArray[(int)( mousePos.y / (int) (64*scaleRatio) )][(int)( mousePos.x / (int) (64*scaleRatio) )] = null;
+				airArray[(int)( mousePos.y / (int) (64*scaleRatio) )][(int)( mousePos.x / (int) (64*scaleRatio) )] = new AirUnit(0);
+			}
+		}
+		
+		//TEMP TEMP TEMP TEMP TEMP
+		if (Gdx.input.isKeyJustPressed(Input.Keys.A)){
+			mousePos.set(Gdx.input.getX(), Gdx.input.getY(), 0);		//finds mouse position
+			camera.unproject(mousePos);
+			
+			if (mousePos.x < 512*scaleRatio && mousePos.y < 512*scaleRatio && airArray[(int)( mousePos.y / (int) (64*scaleRatio) )][(int)( mousePos.x / (int) (64*scaleRatio) )] != null){
+				airArray[(int)( mousePos.y / (int) (64*scaleRatio) )][(int)( mousePos.x / (int) (64*scaleRatio) )].addTemperature(1);
+			}
+		}
+		
+		
+		
+		
 	}
 	
 	@Override
@@ -178,6 +231,24 @@ public class CoolerSimulator extends ApplicationAdapter {
 		batch.dispose();
 		sRender.dispose();
 		gameBoard.dispose();
+		
+		selectorG.dispose();
+		selectorR.dispose();
+		
+		selectorUp.dispose();
+		selectorRight.dispose();
+		selectorDown.dispose();
+		selectorLeft.dispose();
+		
+		//disposes of Textures within ServerUnits
+		for (int verticalNum = 0; verticalNum < 8; verticalNum++){
+			for (int horizontalNum = 0; horizontalNum < 8; horizontalNum++){
+				if ( (unitArray[verticalNum][horizontalNum] != null) ){
+					unitArray[verticalNum][horizontalNum].unitImage.dispose();
+				}
+			}
+		}
+		
 	}
 	
 	@Override

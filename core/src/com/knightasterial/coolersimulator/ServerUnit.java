@@ -36,4 +36,5 @@ public class ServerUnit{
 	public int getDirection(){
 		return inputDirection;
 	}
+	
 }
