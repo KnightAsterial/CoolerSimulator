@@ -3,6 +3,7 @@ package com.knightasterial.coolersimulator;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -28,6 +29,16 @@ public class CoolerSimulator extends ApplicationAdapter {
 	Vector3 mousePos;				//position of the mouse
 	AirUnit currentAir;				//variable to hold current airUnit for drawing
 	
+	int upTemp;
+	int rightTemp;
+	int downTemp;
+	int leftTemp;
+	int currentTemp;
+	
+	ServerUnit currentServer;		//variable for holding current serverUnit for drawing
+	int arrayVerticalIndex;			//variable for holding the vertical array index of the mouse
+	int arrayHorizontalIndex;		//variable for holding the horizontal array index of the mouse
+	
 	/**
 	 * Clockwise rotation:
 	 * 0 = up,
@@ -43,6 +54,8 @@ public class CoolerSimulator extends ApplicationAdapter {
 	
 	ServerUnit[][] unitArray;
 	AirUnit[][] airArray;
+	
+	Sound invalidPlacementSound;
 
 	
 	@Override
@@ -79,7 +92,7 @@ public class CoolerSimulator extends ApplicationAdapter {
 		airArray = new AirUnit[8][8];
 		
 		//temp
-		unitArray[0][1] = new ServerUnit(1);
+		//unitArray[0][1] = new ServerUnit(1);
 		
 		for (int verticalNum = 0; verticalNum < 8; verticalNum++){
 			for (int horizontalNum = 0; horizontalNum < 8; horizontalNum++){
@@ -88,6 +101,8 @@ public class CoolerSimulator extends ApplicationAdapter {
 				}
 			}
 		}
+		
+		invalidPlacementSound = Gdx.audio.newSound(Gdx.files.internal("invalidPlacement.mp3"));
 
 	}
 
@@ -104,6 +119,7 @@ public class CoolerSimulator extends ApplicationAdapter {
 		
 		sRender.begin(ShapeType.Filled);
 		
+		//-------------------------------Draw Temperature AirUnits-----------------------------
 		for (int verticalNum = 0; verticalNum < 8; verticalNum++){
 			for (int horizontalNum = 0; horizontalNum < 8; horizontalNum++){
 				if ( (airArray[verticalNum][horizontalNum] != null) ){
@@ -114,10 +130,6 @@ public class CoolerSimulator extends ApplicationAdapter {
 			}
 		}
 		
-		
-		
-		//sRender.setColor(0, 255, 0, 1);
-		//sRender.rect( 0, 0, (int) (64*scaleRatio), (int) (64*scaleRatio) );
 		sRender.end();
 		
 		batch.begin();
@@ -177,7 +189,7 @@ public class CoolerSimulator extends ApplicationAdapter {
 		
 		
 		
-		//-------------------------------Draws Selector Icon-----------------------------
+		//-------------------------------Draws Selector Mouse Position & Direction-----------------------------
 		mousePos.set(Gdx.input.getX(), Gdx.input.getY(), 0);		//finds mouse position for selector
 		camera.unproject(mousePos);
 
@@ -196,10 +208,80 @@ public class CoolerSimulator extends ApplicationAdapter {
 			camera.unproject(mousePos);
 			
 			if (mousePos.x < 512*scaleRatio && mousePos.y < 512*scaleRatio){									//adds ServerUnit and deletes AirUnit
-				unitArray[(int)( mousePos.y / (int) (64*scaleRatio) )][(int)( mousePos.x / (int) (64*scaleRatio) )] = new ServerUnit(selectorDirection);
-				airArray[(int)( mousePos.y / (int) (64*scaleRatio) )][(int)( mousePos.x / (int) (64*scaleRatio) )] = null;
+				
+				arrayVerticalIndex = (int)( mousePos.y / (int) (64*scaleRatio) );
+				arrayHorizontalIndex = (int)( mousePos.x / (int) (64*scaleRatio) );
+				
+				//if the selector faces up or down
+				if( selectorDirection == 0 || selectorDirection ==2){
+					//if the top or bottom doesn't face an edge
+					if (arrayVerticalIndex+1 <= 7 && arrayVerticalIndex-1 >= 0){
+						//if there is air next to the intake and output
+						if ( airArray[arrayVerticalIndex+1][arrayHorizontalIndex] != null && airArray[arrayVerticalIndex-1][arrayHorizontalIndex] != null ){
+							
+							//error sound if there is a horizontal unit right next to it on the right
+							if ( (arrayHorizontalIndex+1 <8 && unitArray[arrayVerticalIndex][arrayHorizontalIndex+1] != null) && ( (unitArray[arrayVerticalIndex][arrayHorizontalIndex+1].getDirection() == 1 || unitArray[arrayVerticalIndex][arrayHorizontalIndex+1].getDirection() ==3)) ){
+								invalidPlacementSound.play();
+							}
+							//error sound if there is a horizontal unit right next to it on the left
+							else if ( (arrayHorizontalIndex-1 > -1 && unitArray[arrayVerticalIndex][arrayHorizontalIndex-1] != null) && ( (unitArray[arrayVerticalIndex][arrayHorizontalIndex-1].getDirection() == 1 || unitArray[arrayVerticalIndex][arrayHorizontalIndex-1].getDirection() ==3)) ){
+								invalidPlacementSound.play();
+							}
+							else{
+								unitArray[arrayVerticalIndex][arrayHorizontalIndex] = new ServerUnit(selectorDirection);
+								airArray[arrayVerticalIndex][arrayHorizontalIndex] = null;
+							}
+							
+							
+						}else{
+							invalidPlacementSound.play();
+						}
+					}
+					else{
+						invalidPlacementSound.play();
+					}
+				//if the selector faces left or right
+				} else if(selectorDirection == 1 || selectorDirection == 3){
+					//if the left or right doesn't face an edge
+					if (arrayHorizontalIndex+1 <= 7 && arrayHorizontalIndex-1 >= 0){
+						//if there is air next to the input and output
+						if ( airArray[arrayVerticalIndex][arrayHorizontalIndex+1] != null && airArray[arrayVerticalIndex][arrayHorizontalIndex-1] != null){
+							
+							//error sound if there is a vertical unit above it
+							if ( (arrayVerticalIndex+1 < 8 && unitArray[arrayVerticalIndex+1][arrayHorizontalIndex] != null) && ( (unitArray[arrayVerticalIndex+1][arrayHorizontalIndex].getDirection() == 0 || unitArray[arrayVerticalIndex+1][arrayHorizontalIndex].getDirection() ==2)) ){
+								invalidPlacementSound.play();
+							}
+							//error sound if there is a vertical unit below it
+							else if ( (arrayVerticalIndex-1 > -1 && unitArray[arrayVerticalIndex-1][arrayHorizontalIndex] != null) && ( (unitArray[arrayVerticalIndex-1][arrayHorizontalIndex].getDirection() == 0 || unitArray[arrayVerticalIndex-1][arrayHorizontalIndex].getDirection() ==2)) ){
+								invalidPlacementSound.play();
+							}
+							else{
+								unitArray[arrayVerticalIndex][arrayHorizontalIndex] = new ServerUnit(selectorDirection);
+								airArray[arrayVerticalIndex][arrayHorizontalIndex] = null;
+							}
+							
+							
+							
+						}else{
+							invalidPlacementSound.play();
+						}
+					}
+					else{
+						invalidPlacementSound.play();
+					}
+					
+				}
+				else{
+					invalidPlacementSound.play();
+				}
+			}else{
+				invalidPlacementSound.play();
 			}
 		}
+		
+		
+		
+		
 		//-------------------------------Deletes Units After "ESCAPE-pressed"-----------------------------
 		if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)){
 			mousePos.set(Gdx.input.getX(), Gdx.input.getY(), 0);		//finds mouse position
@@ -221,7 +303,80 @@ public class CoolerSimulator extends ApplicationAdapter {
 			}
 		}
 		
+		//add temperature to air
+		for (int verticalNum = 0; verticalNum < 8; verticalNum++){
+			for (int horizontalNum = 0; horizontalNum < 8; horizontalNum++){
+				if ( (unitArray[verticalNum][horizontalNum] != null) ){
+					
+					currentServer = unitArray[verticalNum][horizontalNum];
+					
+					if (currentServer.getDirection() == 0){
+						airArray[verticalNum-1][horizontalNum].addTemperature( (airArray[verticalNum+1][horizontalNum].getTemperature()+10) );
+					}
+					if (currentServer.getDirection() == 1){
+						airArray[verticalNum][horizontalNum-1].addTemperature( (airArray[verticalNum][horizontalNum+1].getTemperature()+10) );
+					}
+					if (currentServer.getDirection() == 2){
+						airArray[verticalNum+1][horizontalNum].addTemperature( (airArray[verticalNum-1][horizontalNum].getTemperature()+10) );
+					}
+					if (currentServer.getDirection() == 3){
+						airArray[verticalNum][horizontalNum+1].addTemperature( (airArray[verticalNum][horizontalNum-1].getTemperature()+10) );
+					}
+				}
+			}
+		}
 		
+		//makes temperature spread
+		for (int verticalNum = 0; verticalNum < 8; verticalNum++){
+			for (int horizontalNum = 0; horizontalNum < 8; horizontalNum++){
+				if (airArray[verticalNum][horizontalNum] != null){
+					
+					currentAir = airArray[verticalNum][horizontalNum];
+					
+					currentTemp = currentAir.getTemperature();
+					
+					//temp of air unit above
+					if (verticalNum+1 > 7){
+						upTemp = 0;
+					}else if (airArray[verticalNum+1][horizontalNum] == null){
+						upTemp = currentTemp;
+					}
+					else{
+						upTemp = airArray[verticalNum+1][horizontalNum].getTemperature();
+					}
+					//temp of air unit right
+					if (horizontalNum+1 > 7){
+						rightTemp = 0;
+					}else if (airArray[verticalNum][horizontalNum+1] == null){
+						rightTemp = currentTemp;
+					}
+					else{
+						rightTemp = airArray[verticalNum][horizontalNum+1].getTemperature();
+					}
+					//temp of air unit below
+					if (verticalNum - 1 < 0){
+						downTemp = 0;
+					}else if (airArray[verticalNum-1][horizontalNum] == null){
+						downTemp = currentTemp;
+					}
+					else{
+						downTemp = airArray[verticalNum-1][horizontalNum].getTemperature();
+					}
+					//temp of air unit left
+					if (horizontalNum-1 < 0){
+						leftTemp = 0;
+					}else if (airArray[verticalNum][horizontalNum-1] == null){
+						leftTemp = currentTemp;
+					}
+					else{
+						leftTemp = airArray[verticalNum][horizontalNum-1].getTemperature();
+					}
+					
+					currentAir.setTemperature((upTemp+rightTemp+downTemp+leftTemp+currentTemp)/5);
+					
+				}
+			}
+		}
 		
 		
 	}

@@ -16,9 +16,6 @@ public class AirUnit {
 		if (temperature < 0){
 			temperature = 0;
 		}
-		if (temperature > 99){
-			temperature = 99;
-		}
 		
 		alpha = 1;
 		
@@ -40,6 +37,11 @@ public class AirUnit {
 			red = 255;
 			green = (Math.abs(99-temperature)*255/24.0f)/255.0f;
 			blue = 0;
+		}
+		else if (temperature > 99){
+			red = 255;
+			green = 255;
+			blue = 255;
 		}
 		
 	}
@@ -52,9 +54,6 @@ public class AirUnit {
 		if (temperature < 0){
 			temperature = 0;
 		}
-		if (temperature > 99){
-			temperature = 99;
-		}
 		
 		
 		alpha = 1;
@@ -77,6 +76,11 @@ public class AirUnit {
 			red = 255;
 			green = (Math.abs(99-temperature)*255/24.0f)/255.0f;
 			blue = 0;
+		}
+		else if (temperature > 99){
+			red = 255;
+			green = 255;
+			blue = 255;
 		}
 	}
 	
@@ -85,9 +89,6 @@ public class AirUnit {
 		if (temperature < 0){
 			temperature = 0;
 		}
-		if (temperature > 99){
-			temperature = 99;
-		}
 		
 		
 		alpha = 1;
@@ -110,6 +111,11 @@ public class AirUnit {
 			red = 255;
 			green = (Math.abs(99-temperature)*255/24.0f)/255.0f;
 			blue = 0;
+		}
+		else if (temperature > 99){
+			red = 255;
+			green = 255;
+			blue = 255;
 		}
 	}
 	
